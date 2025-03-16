@@ -24,7 +24,7 @@ func Abs(x int) int {
 	}
 	return x
 }
-func StrToIntPanic(s string) int {
+func StrToIntorPanic(s string) int {
 	i, err := strconv.Atoi(s)
 	if err != nil {
 		panic(err)
