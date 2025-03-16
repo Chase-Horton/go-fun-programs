@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -14,6 +15,7 @@ func ReadFile(filename string) string {
 }
 func ReadLines(filename string) []string {
 	str := ReadFile(filename)
+	str = strings.TrimSpace(str)
 	return strings.Split(str, "\n")
 }
 func Abs(x int) int {
@@ -21,4 +23,11 @@ func Abs(x int) int {
 		return -x
 	}
 	return x
+}
+func StrToIntPanic(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
+	return i
 }
