@@ -3,7 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"movie-list/logger"
 	"os"
 
 	"github.com/go-sql-driver/mysql"
@@ -29,6 +29,7 @@ type DBMovie struct {
 	Watched     bool
 	ListType    string
 	DateWatched string
+	Notes       string
 }
 
 var db *sql.DB
@@ -47,20 +48,20 @@ func ConnectDb() {
 	var err error
 	db, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatalf("sql error: %s", err.Error())
 	}
 
 	pingErr := db.Ping()
 	if pingErr != nil {
-		log.Fatal(pingErr)
+		logger.Log.Fatalf("sql error: %s", err.Error())
 	}
 	fmt.Println("Connected!")
 }
 func AddMovie(movie DBMovie) (int64, error) {
-	query := "INSERT INTO movies (Title, Year, ImdbId, MALId, ShowType, Poster, UserScore, Plot, Director, Language, Genre, Released, Runtime, Metascore, ImdbRating,Watched, ListType, DateWatched) " +
-		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	query := "INSERT INTO movies (Title, Year, ImdbId, MALId, ShowType, Poster, UserScore, Plot, Director, Language, Genre, Released, Runtime, Metascore, ImdbRating,Watched, ListType, DateWatched, Notes) " +
+		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	result, err := db.Exec(query, movie.Title, movie.Year, movie.ImdbId, movie.MALId, movie.ShowType, movie.Poster, movie.UserScore,
-		movie.Plot, movie.Director, movie.Language, movie.Genre, movie.Released, movie.Runtime, movie.Metascore, movie.ImdbRating, movie.Watched, movie.ListType, movie.DateWatched)
+		movie.Plot, movie.Director, movie.Language, movie.Genre, movie.Released, movie.Runtime, movie.Metascore, movie.ImdbRating, movie.Watched, movie.ListType, movie.DateWatched, movie.Notes)
 	if err != nil {
 		return 0, fmt.Errorf("add_movie: %v", err)
 	}
@@ -83,7 +84,7 @@ func GetMovies() ([]DBMovie, error) {
 		var movie DBMovie
 		err := rows.Scan(&movie.Id, &movie.Title, &movie.Year, &movie.ImdbId, &movie.MALId, &movie.ShowType, &movie.Poster,
 			&movie.UserScore, &movie.Plot, &movie.Director, &movie.Language, &movie.Genre, &movie.Released,
-			&movie.Runtime, &movie.Metascore, &movie.ImdbRating, &movie.Watched, &movie.ListType)
+			&movie.Runtime, &movie.Metascore, &movie.ImdbRating, &movie.Watched, &movie.ListType, &movie.DateWatched, &movie.Notes)
 		if err != nil {
 			return nil, fmt.Errorf("get_movies: %v", err)
 		}

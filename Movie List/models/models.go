@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"movie-list/logger"
 	"net/http"
 	"os"
 )
@@ -75,13 +75,12 @@ func GetApiKey() string {
 func SearchMovie(title string) MovieResponse {
 	response, err := http.Get("http://www.omdbapi.com/?apikey=" + GetApiKey() + "&s=" + title)
 	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		logger.Log.Fatalf("Error Searching for Movie: %s", err.Error())
 	}
 
 	responseData, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatalf("Error Parsing Search Movie Response: %s", err.Error())
 	}
 
 	var responseObject MovieResponse
@@ -89,15 +88,14 @@ func SearchMovie(title string) MovieResponse {
 	return responseObject
 }
 func GetMovieDetails(title string) MovieDetailed {
-	response, err := http.Get("http://www.omdbapi.com/?apikey=" + GetApiKey() + "&t=" + title)
+	response, err := http.Get("http://www.omdbapi.com/?apikey=" + GetApiKey() + "&i=" + title + "&plot=full")
 	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		logger.Log.Fatalf("Error Getting Movie Details: %s", err.Error())
 	}
 
 	responseData, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatalf("Error Parsing Movie Details: %s", err.Error())
 	}
 
 	var responseObject MovieDetailed

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"movie-list/models"
 	"movie-list/views"
 
 	"github.com/gdamore/tcell/v2"
@@ -19,9 +20,11 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	models.ConnectDb()
+
 	viewPage, viewPageFocus := views.MainView()
 	pages.AddPage("view", viewPage, true, true)
-	searchPage, searchPageFocus := views.Search(app)
+	searchPage, searchPageFocus := views.Search(app, pages)
 	pages.AddPage("search", searchPage, true, false)
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -30,7 +33,7 @@ func main() {
 			pages.SwitchToPage("search")
 			app.SetFocus(searchPageFocus)
 			return nil
-		case tcell.KeyCtrlV:
+		case tcell.KeyCtrlT:
 			pages.SwitchToPage("view")
 			app.SetFocus(viewPageFocus)
 			return nil
