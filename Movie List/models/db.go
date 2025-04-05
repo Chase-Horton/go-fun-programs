@@ -58,10 +58,17 @@ func ConnectDb() {
 	fmt.Println("Connected!")
 }
 func AddMovie(movie DBMovie) (int64, error) {
+	dateWatched := sql.NullString{}
+	if movie.DateWatched != "" {
+		dateWatched.String = movie.DateWatched
+		dateWatched.Valid = true
+	} else {
+		dateWatched.Valid = false
+	}
 	query := "INSERT INTO movies (Title, Year, ImdbId, MALId, ShowType, Poster, UserScore, Plot, Director, Language, Genre, Released, Runtime, Metascore, ImdbRating,Watched, ListType, DateWatched, Notes) " +
 		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	result, err := db.Exec(query, movie.Title, movie.Year, movie.ImdbId, movie.MALId, movie.ShowType, movie.Poster, movie.UserScore,
-		movie.Plot, movie.Director, movie.Language, movie.Genre, movie.Released, movie.Runtime, movie.Metascore, movie.ImdbRating, movie.Watched, movie.ListType, movie.DateWatched, movie.Notes)
+		movie.Plot, movie.Director, movie.Language, movie.Genre, movie.Released, movie.Runtime, movie.Metascore, movie.ImdbRating, movie.Watched, movie.ListType, dateWatched, movie.Notes)
 	if err != nil {
 		return 0, fmt.Errorf("add_movie: %v", err)
 	}
@@ -82,11 +89,17 @@ func GetMovies() ([]DBMovie, error) {
 	movies := []DBMovie{}
 	for rows.Next() {
 		var movie DBMovie
+		var dateWatched sql.NullString
 		err := rows.Scan(&movie.Id, &movie.Title, &movie.Year, &movie.ImdbId, &movie.MALId, &movie.ShowType, &movie.Poster,
 			&movie.UserScore, &movie.Plot, &movie.Director, &movie.Language, &movie.Genre, &movie.Released,
-			&movie.Runtime, &movie.Metascore, &movie.ImdbRating, &movie.Watched, &movie.ListType, &movie.DateWatched, &movie.Notes)
+			&movie.Runtime, &movie.Metascore, &movie.ImdbRating, &movie.Watched, &movie.ListType, &dateWatched, &movie.Notes)
 		if err != nil {
 			return nil, fmt.Errorf("get_movies: %v", err)
+		}
+		if dateWatched.Valid {
+			movie.DateWatched = dateWatched.String
+		} else {
+			movie.DateWatched = ""
 		}
 		movies = append(movies, movie)
 	}

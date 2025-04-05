@@ -62,26 +62,32 @@ func refreshMainView() {
 	if err != nil {
 		logger.Log.Fatalf("Error getting movies from database: %s", err.Error())
 	}
+	g := 1
 	movieList.Clear()
 	movieList.SetCell(0, 0, tview.NewTableCell("Type").SetTextColor(tcell.ColorYellow).SetSelectable(false))
 	movieList.SetCell(0, 1, tview.NewTableCell("Title").SetTextColor(tcell.ColorYellow).SetSelectable(false))
-	movieList.SetCell(0, 2, tview.NewTableCell("Genres").SetTextColor(tcell.ColorYellow).SetSelectable(false))
-	movieList.SetCell(0, 3, tview.NewTableCell("Year").SetTextColor(tcell.ColorYellow).SetSelectable(false))
-	movieList.SetCell(0, 4, tview.NewTableCell("Watched").SetTextColor(tcell.ColorYellow).SetSelectable(false))
-	movieList.SetCell(0, 5, tview.NewTableCell("Runtime").SetTextColor(tcell.ColorYellow).SetSelectable(false))
-	movieList.SetCell(0, 6, tview.NewTableCell("Imdb Rating").SetTextColor(tcell.ColorYellow).SetSelectable(false))
-	movieList.SetCell(0, 7, tview.NewTableCell("User Score").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	if movieListShowGenres {
+		g = 0
+		movieList.SetCell(0, 2, tview.NewTableCell("Genres").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	}
+	movieList.SetCell(0, 3-g, tview.NewTableCell("Year").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	movieList.SetCell(0, 4-g, tview.NewTableCell("Watched").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	movieList.SetCell(0, 5-g, tview.NewTableCell("Runtime").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	movieList.SetCell(0, 6-g, tview.NewTableCell("Imdb Rating").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	movieList.SetCell(0, 7-g, tview.NewTableCell("User Score").SetTextColor(tcell.ColorYellow).SetSelectable(false))
 
 	for row, movie := range movies {
 		row += 1
-		movieList.SetCell(row, 0, tview.NewTableCell(movie.ListType).SetTextColor(tcell.ColorWhite).SetSelectable(true))
+		movieList.SetCell(row, 0, tview.NewTableCell(movie.ShowType).SetTextColor(tcell.ColorCornflowerBlue).SetSelectable(true))
 		movieList.SetCell(row, 1, tview.NewTableCell(movie.Title).SetTextColor(tcell.ColorWhite).SetSelectable(true))
-		movieList.SetCell(row, 2, tview.NewTableCell(movie.Genre).SetTextColor(tcell.ColorWhite).SetSelectable(true))
-		movieList.SetCell(row, 3, tview.NewTableCell(movie.Year).SetTextColor(tcell.ColorWhite).SetSelectable(true).SetAlign(tview.AlignRight))
-		movieList.SetCell(row, 4, tview.NewTableCell(movie.DateWatched).SetTextColor(tcell.ColorWhite).SetSelectable(true))
-		movieList.SetCell(row, 5, tview.NewTableCell(movie.Runtime).SetTextColor(tcell.ColorWhite).SetSelectable(true))
-		movieList.SetCell(row, 6, tview.NewTableCell(movie.ImdbRating).SetTextColor(tcell.ColorWhite).SetSelectable(true).SetAlign(tview.AlignRight))
-		movieList.SetCell(row, 7, tview.NewTableCell(strconv.FormatFloat(movie.UserScore, 'f', 1, 64)).SetTextColor(tcell.ColorWhite).SetSelectable(true).SetAlign(tview.AlignRight))
+		if movieListShowGenres {
+			movieList.SetCell(row, 2, tview.NewTableCell(movie.Genre).SetTextColor(tcell.ColorWhite).SetSelectable(true))
+		}
+		movieList.SetCell(row, 3-g, tview.NewTableCell(movie.Year).SetTextColor(tcell.ColorGray.TrueColor()).SetSelectable(true).SetAlign(tview.AlignRight))
+		movieList.SetCell(row, 4-g, tview.NewTableCell(movie.DateWatched).SetTextColor(tcell.ColorGreen).SetSelectable(true))
+		movieList.SetCell(row, 5-g, tview.NewTableCell(movie.Runtime).SetTextColor(tcell.ColorPurple).SetSelectable(true).SetAlign(tview.AlignRight))
+		movieList.SetCell(row, 6-g, tview.NewTableCell(movie.ImdbRating).SetTextColor(tcell.ColorBlue).SetSelectable(true).SetAlign(tview.AlignRight))
+		movieList.SetCell(row, 7-g, tview.NewTableCell(strconv.FormatFloat(movie.UserScore, 'f', 1, 64)).SetTextColor(tcell.ColorBlue).SetSelectable(true).SetAlign(tview.AlignRight))
 	}
 }
 func updateDescriptionAndNotes(description, notes *tview.TextView, row int) {
@@ -94,19 +100,30 @@ func updateDescriptionAndNotes(description, notes *tview.TextView, row int) {
 
 var mainViewMovies []models.DBMovie
 var movieList *tview.Table
+var movieListShowGenres = true
 
 func MainView() (*tview.Flex, tview.Primitive) {
 	var movieDescription, movieNotes *tview.TextView
-	movieList = tview.NewTable().SetSelectionChangedFunc(func(row, _ int) {
-		if row == 0 {
-			return
-		}
-		updateDescriptionAndNotes(movieDescription, movieNotes, row-1)
-	})
-
+	movieList = tview.NewTable().
+		SetSelectionChangedFunc(func(row, _ int) {
+			if row == 0 {
+				return
+			}
+			updateDescriptionAndNotes(movieDescription, movieNotes, row-1)
+		})
 	refreshMainView()
 	movieList.SetSeparator(tview.Borders.Vertical).
 		SetSelectable(true, false)
+
+	movieList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlG:
+			movieListShowGenres = !movieListShowGenres
+			refreshMainView()
+			return nil
+		}
+		return event
+	})
 
 	movieDescription = tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
@@ -151,11 +168,14 @@ func RatingView(m models.Movie, pages *tview.Pages, searchInput *tview.InputFiel
 		rating := form.GetFormItemByLabel("Rating").(*tview.InputField).GetText()
 		notes := form.GetFormItemByLabel("Notes").(*tview.TextArea).GetText()
 		dateText := form.GetFormItemByLabel("Date Watched").(*tview.InputField).GetText()
-		date, err := time.Parse("01/02/2006", dateText)
-		if err != nil {
-			//modal
-			logger.Log.Printf("Error parsing date: %s", err.Error())
-			return
+		dateWatched := ""
+		if dateText != "" {
+			date, err := time.Parse("01/02/2006", dateText)
+			if err != nil {
+				logger.Log.Printf("Error parsing date: %s", err.Error())
+				return
+			}
+			dateWatched = date.Format("2006-01-02")
 		}
 		_, listType := form.GetFormItemByLabel("List Type").(*tview.DropDown).GetCurrentOption()
 		if rating == "" {
@@ -169,7 +189,7 @@ func RatingView(m models.Movie, pages *tview.Pages, searchInput *tview.InputFiel
 		dbMovie := movie.ToDBMovie(score)
 		dbMovie.Notes = notes
 		dbMovie.ListType = listType
-		dbMovie.DateWatched = date.Format("2006-01-02")
+		dbMovie.DateWatched = dateWatched
 		dbMovie.Watched = listType == "watched"
 		dbMovie.UserScore = score
 		_, err = models.AddMovie(dbMovie)
