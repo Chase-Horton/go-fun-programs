@@ -20,7 +20,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	models.ConnectDb()
+	models.ConnectDBObject(true, true)
 
 	viewPage, viewPageFocus := views.MainView()
 	pages.AddPage("view", viewPage, true, true)
