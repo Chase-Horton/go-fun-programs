@@ -7,7 +7,7 @@ import (
 )
 
 func ReadFile(filename string) string {
-	data, err := os.ReadFile("./2024/data/" + filename)
+	data, err := os.ReadFile("B:/code/go/repos/go-fun-programs/AOC/2024/data/" + filename)
 	if err != nil {
 		panic(err)
 	}
